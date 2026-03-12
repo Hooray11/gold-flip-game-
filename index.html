@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="x-ogp-key" content="5f4676f9-1306-45bd-ba4e-98e32d088470" id="ogp-key-meta" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gold Flip — Coin Gambling Game</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Cinzel:wght@400;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --gold: #d4a843;
+    --gold-light: #f0cc6e;
+    --gold-dark: #9a7320;
+    --bg: #0a0803;
+    --surface: #12100a;
+    --surface2: #1c1810;
+    --surface3: #262118;
+    --text: #f5e9cc;
+    --text-dim: #8a7a5a;
+    --red: #c0392b;
+    --green: #27ae60;
+    --green-light: #2ecc71;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    position: relative;
+  }
+
+  /* Background atmosphere */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 0%, rgba(212,168,67,0.07) 0%, transparent 70%),
+      radial-gradient(ellipse 60% 40% at 20% 100%, rgba(212,168,67,0.04) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 100%, rgba(212,168,67,0.04) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Subtle noise texture */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.4;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 480px;
+    padding: 24px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+  }
+
+  .header h1 {
+    font-family: 'Cinzel', serif;
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    background: linear-gradient(135deg, var(--gold-dark) 0%, var(--gold-light) 50%, var(--gold-dark) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.1;
+  }
+
+  .header p {
+    font-size: 0.72rem;
+    letter-spacing: 0.3em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  /* Balance */
+  .balance-bar {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid rgba(212,168,67,0.15);
+    border-radius: 12px;
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .balance-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .balance-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  .balance-value {
+    font-family: 'Cinzel', serif;
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--gold-light);
+  }
+
+  .balance-value.small {
+    font-size: 0.95rem;
+  }
+
+  .balance-divider {
+    width: 1px;
+    height: 32px;
+    background: rgba(212,168,67,0.15);
+  }
+
+  /* Coin arena */
+  .coin-arena {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid rgba(212,168,67,0.12);
+    border-radius: 20px;
+    padding: 28px 20px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .coin-arena::before {
+    content: '';
+    position: absolute;
+    top: -40px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 200px;
+    height: 80px;
+    background: radial-gradient(ellipse, rgba(212,168,67,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  /* Coin */
+  .coin-wrapper {
+    perspective: 600px;
+    width: 130px;
+    height: 130px;
+  }
+
+  .coin {
+    width: 130px;
+    height: 130px;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.1s;
+  }
+
+  .coin.flipping {
+    animation: coinSpin 1.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  }
+
+  .coin.land-heads {
+    animation: coinSpin 1.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards,
+               coinLandHeads 0.3s ease 1.8s forwards;
+  }
+
+  .coin.land-tails {
+    animation: coinSpin 1.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards,
+               coinLandTails 0.3s ease 1.8s forwards;
+  }
+
+  @keyframes coinSpin {
+    0%   { transform: rotateY(0deg) rotateX(0deg); }
+    10%  { transform: rotateY(180deg) rotateX(20deg) translateY(-8px); }
+    25%  { transform: rotateY(540deg) rotateX(30deg) translateY(-18px); }
+    45%  { transform: rotateY(900deg) rotateX(20deg) translateY(-10px); }
+    65%  { transform: rotateY(1260deg) rotateX(10deg) translateY(-5px); }
+    80%  { transform: rotateY(1440deg) rotateX(5deg) translateY(-2px); }
+    100% { transform: rotateY(1620deg) rotateX(0deg) translateY(0px); }
+  }
+
+  @keyframes coinLandHeads {
+    to { transform: rotateY(1620deg); }
+  }
+  @keyframes coinLandTails {
+    to { transform: rotateY(1800deg); }
+  }
+
+  .coin-face {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    backface-visibility: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    box-shadow: 0 0 0 4px var(--gold-dark), 0 0 0 6px rgba(212,168,67,0.2), inset 0 2px 8px rgba(0,0,0,0.4);
+  }
+
+  .coin-heads {
+    background: radial-gradient(circle at 35% 35%, #f5d070 0%, #d4a843 40%, #9a7320 80%, #7a5c18 100%);
+    transform: rotateY(0deg);
+  }
+
+  .coin-tails {
+    background: radial-gradient(circle at 35% 35%, #e8c860 0%, #c8982a 40%, #8a6418 80%, #6a4c10 100%);
+    transform: rotateY(180deg);
+  }
+
+  .coin-face span {
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+  }
+
+  /* Result flash */
+  .result-text {
+    font-family: 'Cinzel', serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    min-height: 28px;
+    text-align: center;
+    transition: all 0.3s;
+  }
+
+  .result-text.win { color: var(--green-light); }
+  .result-text.lose { color: #e74c3c; }
+  .result-text.neutral { color: var(--text-dim); }
+
+  /* Choice buttons */
+  .choice-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    text-align: center;
+  }
+
+  .choice-buttons {
+    display: flex;
+    gap: 14px;
+    width: 100%;
+  }
+
+  .choice-btn {
+    flex: 1;
+    padding: 14px 10px;
+    border-radius: 12px;
+    border: 2px solid rgba(212,168,67,0.2);
+    background: var(--surface2);
+    color: var(--text-dim);
+    font-family: 'Cinzel', serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .choice-btn .icon { font-size: 1.4rem; }
+
+  .choice-btn:hover {
+    border-color: var(--gold);
+    color: var(--gold-light);
+    background: var(--surface3);
+    transform: translateY(-2px);
+  }
+
+  .choice-btn.selected {
+    border-color: var(--gold);
+    background: linear-gradient(135deg, rgba(212,168,67,0.15), rgba(212,168,67,0.05));
+    color: var(--gold-light);
+    box-shadow: 0 0 20px rgba(212,168,67,0.12);
+  }
+
+  .choice-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* Bet section */
+  .bet-section {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .bet-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    text-align: center;
+  }
+
+  .bet-chips {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+  }
+
+  .chip {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    border: 3px dashed;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Cinzel', serif;
+    font-size: 0.72rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+
+  .chip:hover { transform: translateY(-3px) scale(1.05); }
+
+  .chip-10 { border-color: #e74c3c; color: #e74c3c; background: rgba(231,76,60,0.08); }
+  .chip-25 { border-color: #3498db; color: #3498db; background: rgba(52,152,219,0.08); }
+  .chip-50 { border-color: var(--gold); color: var(--gold-light); background: rgba(212,168,67,0.08); }
+  .chip-100 { border-color: var(--green-light); color: var(--green-light); background: rgba(46,204,113,0.08); }
+
+  .chip:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+
+  .bet-display {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+  }
+
+  .bet-amount {
+    font-family: 'Cinzel', serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--gold-light);
+    min-width: 80px;
+    text-align: center;
+  }
+
+  .clear-bet {
+    background: none;
+    border: 1px solid rgba(212,168,67,0.2);
+    border-radius: 8px;
+    color: var(--text-dim);
+    padding: 4px 10px;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .clear-bet:hover { border-color: var(--gold); color: var(--gold); }
+  .clear-bet:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  /* Flip button */
+  .flip-btn {
+    width: 100%;
+    padding: 17px;
+    border-radius: 14px;
+    border: none;
+    background: linear-gradient(135deg, var(--gold-dark) 0%, var(--gold) 50%, var(--gold-dark) 100%);
+    color: #0a0803;
+    font-family: 'Cinzel', serif;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    cursor: pointer;
+    transition: all 0.25s;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(212,168,67,0.25), 0 1px 0 rgba(255,255,255,0.1) inset;
+  }
+
+  .flip-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 50%);
+    pointer-events: none;
+  }
+
+  .flip-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(212,168,67,0.4), 0 1px 0 rgba(255,255,255,0.1) inset;
+  }
+
+  .flip-btn:active:not(:disabled) { transform: translateY(0); }
+
+  .flip-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* History */
+  .history-row {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .history-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+
+  .history-dots {
+    display: flex;
+    gap: 5px;
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+
+  .history-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    animation: dotIn 0.3s ease;
+  }
+
+  .history-dot.win { background: var(--green-light); }
+  .history-dot.lose { background: #e74c3c; }
+
+  @keyframes dotIn {
+    from { transform: scale(0); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+
+  /* Particle burst */
+  .particles {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  .particle {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    animation: particle-fly 1s ease-out forwards;
+  }
+
+  @keyframes particle-fly {
+    0% { transform: translate(0,0) scale(1); opacity: 1; }
+    100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+  }
+
+  /* Streak badge */
+  .streak {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    font-family: 'Cinzel', serif;
+  }
+
+  .streak-badge {
+    background: linear-gradient(135deg, rgba(212,168,67,0.2), rgba(212,168,67,0.05));
+    border: 1px solid rgba(212,168,67,0.3);
+    border-radius: 20px;
+    padding: 2px 10px;
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    color: var(--gold-light);
+  }
+
+  /* Win/lose overlay flash */
+  .flash {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 5;
+    opacity: 0;
+    transition: opacity 0.1s;
+  }
+
+  .flash.win-flash { background: radial-gradient(ellipse at 50% 50%, rgba(46,204,113,0.2) 0%, transparent 70%); }
+  .flash.lose-flash { background: radial-gradient(ellipse at 50% 50%, rgba(231,76,60,0.2) 0%, transparent 70%); }
+  .flash.show { opacity: 1; }
+
+  /* Responsive */
+  @media (max-height: 650px) {
+    .container { gap: 12px; padding: 12px 16px; }
+    .coin-wrapper { width: 100px; height: 100px; }
+    .coin { width: 100px; height: 100px; }
+    .chip { width: 44px; height: 44px; font-size: 0.65rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="flash win-flash" id="winFlash"></div>
+<div class="flash lose-flash" id="loseFlash"></div>
+<div class="particles" id="particles"></div>
+
+<div class="container">
+  <!-- Header -->
+  <div class="header">
+    <h1>GOLD FLIP</h1>
+    <p>Predict the coin · Double or nothing</p>
+  </div>
+
+  <!-- Balance Bar -->
+  <div class="balance-bar">
+    <div class="balance-item">
+      <span class="balance-label">Balance</span>
+      <span class="balance-value" id="balance">1000</span>
+    </div>
+    <div class="balance-divider"></div>
+    <div class="balance-item">
+      <span class="balance-label">Total Won</span>
+      <span class="balance-value small" id="totalWon">0</span>
+    </div>
+    <div class="balance-divider"></div>
+    <div class="balance-item">
+      <span class="balance-label">Flips</span>
+      <span class="balance-value small" id="totalFlips">0</span>
+    </div>
+  </div>
+
+  <!-- Coin Arena -->
+  <div class="coin-arena">
+    <!-- Coin -->
+    <div class="coin-wrapper">
+      <div class="coin" id="coin">
+        <div class="coin-face coin-heads"><span>👑</span></div>
+        <div class="coin-face coin-tails"><span>⚡</span></div>
+      </div>
+    </div>
+
+    <!-- Result text -->
+    <div class="result-text neutral" id="resultText">Choose your side & place a bet</div>
+
+    <!-- Streak -->
+    <div class="streak" id="streakArea" style="display:none">
+      <span>Streak</span>
+      <span class="streak-badge" id="streakBadge">🔥 3</span>
+    </div>
+  </div>
+
+  <!-- Choice Buttons -->
+  <div style="width:100%; display:flex; flex-direction:column; gap:8px;">
+    <div class="choice-label">Your prediction</div>
+    <div class="choice-buttons">
+      <button class="choice-btn" id="btnHeads" onclick="selectSide('heads')">
+        <span class="icon">👑</span>
+        <span>HEADS</span>
+      </button>
+      <button class="choice-btn" id="btnTails" onclick="selectSide('tails')">
+        <span class="icon">⚡</span>
+        <span>TAILS</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Bet -->
+  <div class="bet-section">
+    <div class="bet-label">Place your bet</div>
+    <div class="bet-chips">
+      <button class="chip chip-10" onclick="addBet(10)" id="chip10">10</button>
+      <button class="chip chip-25" onclick="addBet(25)" id="chip25">25</button>
+      <button class="chip chip-50" onclick="addBet(50)" id="chip50">50</button>
+      <button class="chip chip-100" onclick="addBet(100)" id="chip100">100</button>
+    </div>
+    <div class="bet-display">
+      <div class="bet-amount" id="betAmount">0</div>
+      <button class="clear-bet" id="clearBetBtn" onclick="clearBet()">CLEAR</button>
+    </div>
+  </div>
+
+  <!-- Flip Button -->
+  <button class="flip-btn" id="flipBtn" onclick="flip()">FLIP THE COIN</button>
+
+  <!-- History -->
+  <div class="history-row">
+    <span class="history-label">History</span>
+    <div class="history-dots" id="historyDots"></div>
+  </div>
+</div>
+
+<script>
+let balance = 1000;
+let bet = 0;
+let choice = null;
+let isFlipping = false;
+let totalWon = 0;
+let totalFlips = 0;
+let streak = 0;
+let history = [];
+
+function selectSide(side) {
+  if (isFlipping) return;
+  choice = side;
+  document.getElementById('btnHeads').classList.toggle('selected', side === 'heads');
+  document.getElementById('btnTails').classList.toggle('selected', side === 'tails');
+}
+
+function addBet(amount) {
+  if (isFlipping) return;
+  if (bet + amount > balance) {
+    bet = balance;
+  } else {
+    bet += amount;
+  }
+  updateBetDisplay();
+}
+
+function clearBet() {
+  if (isFlipping) return;
+  bet = 0;
+  updateBetDisplay();
+}
+
+function updateBetDisplay() {
+  document.getElementById('betAmount').textContent = bet;
+}
+
+function updateUI() {
+  document.getElementById('balance').textContent = balance;
+  document.getElementById('totalWon').textContent = totalWon;
+  document.getElementById('totalFlips').textContent = totalFlips;
+}
+
+function setControlsDisabled(disabled) {
+  ['btnHeads', 'btnTails', 'chip10', 'chip25', 'chip50', 'chip100', 'clearBetBtn', 'flipBtn']
+    .forEach(id => document.getElementById(id).disabled = disabled);
+}
+
+function flip() {
+  if (isFlipping) return;
+  if (!choice) {
+    pulse('resultText', 'Pick HEADS or TAILS first!', 'neutral');
+    return;
+  }
+  if (bet <= 0) {
+    pulse('resultText', 'Place a bet to flip!', 'neutral');
+    return;
+  }
+  if (bet > balance) {
+    pulse('resultText', 'Not enough balance!', 'neutral');
+    return;
+  }
+
+  isFlipping = true;
+  setControlsDisabled(true);
+
+  const result = Math.random() < 0.5 ? 'heads' : 'tails';
+  const won = result === choice;
+
+  document.getElementById('resultText').textContent = '...';
+  document.getElementById('resultText').className = 'result-text neutral';
+
+  const coin = document.getElementById('coin');
+  coin.className = 'coin';
+  // force reflow
+  void coin.offsetWidth;
+  coin.className = 'coin flipping';
+
+  setTimeout(() => {
+    coin.className = 'coin ' + (result === 'heads' ? 'land-heads' : 'land-tails');
+
+    setTimeout(() => {
+      isFlipping = false;
+      setControlsDisabled(false);
+      totalFlips++;
+
+      const resultEl = document.getElementById('resultText');
+      if (won) {
+        balance += bet;
+        totalWon += bet;
+        streak++;
+        history.push('win');
+        resultEl.textContent = `👑 ${result.toUpperCase()} — YOU WIN +${bet}!`;
+        resultEl.className = 'result-text win';
+        showFlash('win');
+        spawnParticles(true);
+      } else {
+        balance -= bet;
+        streak = 0;
+        history.push('lose');
+        resultEl.textContent = `⚡ ${result.toUpperCase()} — YOU LOSE -${bet}`;
+        resultEl.className = 'result-text lose';
+        showFlash('lose');
+        spawnParticles(false);
+      }
+
+      bet = 0;
+      updateBetDisplay();
+      updateUI();
+      updateStreak();
+      updateHistory();
+
+      if (balance <= 0) {
+        setTimeout(() => {
+          document.getElementById('resultText').textContent = 'Broke! Restarting...';
+          setTimeout(restart, 1500);
+        }, 800);
+      }
+    }, 400);
+  }, 1850);
+}
+
+function restart() {
+  balance = 1000;
+  bet = 0;
+  choice = null;
+  totalWon = 0;
+  totalFlips = 0;
+  streak = 0;
+  history = [];
+  document.getElementById('btnHeads').classList.remove('selected');
+  document.getElementById('btnTails').classList.remove('selected');
+  document.getElementById('resultText').textContent = 'Choose your side & place a bet';
+  document.getElementById('resultText').className = 'result-text neutral';
+  document.getElementById('historyDots').innerHTML = '';
+  document.getElementById('streakArea').style.display = 'none';
+  updateUI();
+  updateBetDisplay();
+}
+
+function pulse(id, text, cls) {
+  const el = document.getElementById(id);
+  el.textContent = text;
+  el.className = 'result-text ' + cls;
+}
+
+function showFlash(type) {
+  const el = document.getElementById(type === 'win' ? 'winFlash' : 'loseFlash');
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 400);
+}
+
+function spawnParticles(win) {
+  const container = document.getElementById('particles');
+  const colors = win
+    ? ['#f0cc6e', '#d4a843', '#2ecc71', '#f5e9cc']
+    : ['#e74c3c', '#c0392b', '#e67e22', '#d4a843'];
+
+  for (let i = 0; i < 18; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const angle = (Math.random() * 360) * (Math.PI / 180);
+    const dist = 80 + Math.random() * 140;
+    p.style.cssText = `
+      left: calc(50% + ${Math.cos(angle) * 20}px);
+      top: calc(40% + ${Math.sin(angle) * 20}px);
+      background: ${colors[Math.floor(Math.random() * colors.length)]};
+      --tx: ${Math.cos(angle) * dist}px;
+      --ty: ${Math.sin(angle) * dist}px;
+      width: ${5 + Math.random() * 8}px;
+      height: ${5 + Math.random() * 8}px;
+      animation-delay: ${Math.random() * 0.1}s;
+      animation-duration: ${0.7 + Math.random() * 0.5}s;
+    `;
+    container.appendChild(p);
+    setTimeout(() => p.remove(), 1500);
+  }
+}
+
+function updateStreak() {
+  const area = document.getElementById('streakArea');
+  if (streak >= 2) {
+    area.style.display = 'flex';
+    document.getElementById('streakBadge').textContent =
+      (streak >= 5 ? '🔥🔥' : '🔥') + ' ' + streak + 'x Streak';
+  } else {
+    area.style.display = 'none';
+  }
+}
+
+function updateHistory() {
+  const container = document.getElementById('historyDots');
+  const last = history.slice(-16);
+  container.innerHTML = '';
+  last.forEach(h => {
+    const d = document.createElement('div');
+    d.className = `history-dot ${h}`;
+    container.appendChild(d);
+  });
+}
+</script>
+</body>
+</html>
